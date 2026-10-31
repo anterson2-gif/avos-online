@@ -1,14 +1,28 @@
 import os
 import socket
 import hashlib
+import zipfile
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-AUDIO_CACHE_DIR = os.path.join(BASE_DIR, "static", "audio")
+STATIC_DIR = os.path.join(BASE_DIR, "static")
+TEMPLATES_DIR = os.path.join(BASE_DIR, "templates")
+AUDIO_CACHE_DIR = os.path.join(STATIC_DIR, "audio")
+
+# Descompacta automaticamente pacote_arquivos.zip na nuvem caso as pastas templates/ ou static/ não tenham subido no GitHub
+ZIP_BUNDLE = os.path.join(BASE_DIR, "pacote_arquivos.zip")
+if os.path.exists(ZIP_BUNDLE) and not os.path.exists(os.path.join(TEMPLATES_DIR, "index.html")):
+    try:
+        with zipfile.ZipFile(ZIP_BUNDLE, "r") as zf:
+            zf.extractall(BASE_DIR)
+    except Exception as e:
+        print(f"Aviso ao extrair pacote_arquivos.zip: {e}")
+
 os.makedirs(AUDIO_CACHE_DIR, exist_ok=True)
+os.makedirs(TEMPLATES_DIR, exist_ok=True)
 
 app = FastAPI(
     title="Avós Online - Super App Assistivo",
@@ -16,9 +30,9 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Monta arquivos estáticos e templates Jinja2
-app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), name="static")
-templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
+# Monta arquivos estáticos e templates Jinja2 (aceita templates/ ou raiz caso arquivos tenham sido enviados soltos)
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+templates = Jinja2Templates(directory=[TEMPLATES_DIR, BASE_DIR])
 
 @app.get("/api/tts")
 async def tts_endpoint(text: str, voice: str = "pt-BR-FranciscaNeural"):
