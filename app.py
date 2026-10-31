@@ -12,9 +12,9 @@ STATIC_DIR = os.path.join(BASE_DIR, "static")
 TEMPLATES_DIR = os.path.join(BASE_DIR, "templates")
 AUDIO_CACHE_DIR = os.path.join(STATIC_DIR, "audio")
 
-# Descompacta automaticamente pacote_arquivos.zip na nuvem caso as pastas templates/ ou static/ não tenham subido no GitHub
+# Descompacta automaticamente pacote_arquivos.zip na nuvem (ou quando as pastas não existirem)
 ZIP_BUNDLE = os.path.join(BASE_DIR, "pacote_arquivos.zip")
-if os.path.exists(ZIP_BUNDLE) and not os.path.exists(os.path.join(TEMPLATES_DIR, "index.html")):
+if os.path.exists(ZIP_BUNDLE) and (os.environ.get("RENDER") or not os.path.exists(os.path.join(TEMPLATES_DIR, "index.html"))):
     try:
         with zipfile.ZipFile(ZIP_BUNDLE, "r") as zf:
             zf.extractall(BASE_DIR)
